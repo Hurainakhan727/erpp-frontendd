@@ -1,0 +1,23 @@
+import React from 'react';
+import { Outlet, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import EmployeeSidebar from '../components/EmployeeSidebar';
+import Topbar from '../components/Topbar';
+
+export default function EmployeeLayout() {
+  const { user, activeRole } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  if (activeRole !== 'employee') return <Navigate to="/dashboard" />;
+
+  return (
+    <div className="app-layout">
+      <EmployeeSidebar />
+      <div className="main-area">
+        <Topbar />
+        <div className="page-content">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}
