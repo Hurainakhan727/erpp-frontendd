@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import Modal from '../../components/Modal';
-import ConfirmDialog from '../../components/ConfirmDialog';
-import { useToastContext } from '../../contexts/ToastContext';
+import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { useToastContext } from '../../context/ToastContext';
 
 interface SettingsPageProps {
   title: string;
@@ -130,3 +130,14 @@ export default function SettingsPage({ title, columns, data, modalFields, onAdd,
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

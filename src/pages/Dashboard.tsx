@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useData } from "../contexts/DataContext";
+import { useAuth } from "../context/AuthContext";
+import { useData } from "../context/DataContext";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -33,7 +33,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import DecisionBanner from "../components/DecisionBanner";
+import DecisionBanner from "../components/common/DecisionBanner";
 
 const deptDistribution = [
   { name: "Engineering", value: 84, color: "#1565c0" },
@@ -1323,3 +1323,13 @@ function DonutCard({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

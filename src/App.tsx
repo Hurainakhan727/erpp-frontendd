@@ -1,8 +1,8 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { ToastProvider } from "./contexts/ToastContext";
-import { DataProvider } from "./contexts/DataContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
+import { DataProvider } from "./context/DataContext";
 import MainLayout from "./layouts/MainLayout";
 import EmployeeLayout from "./layouts/EmployeeLayout";
 import Login from "./pages/Login";
@@ -137,3 +137,14 @@ const App = () => (
 );
 
 export default App;
+
+
+
+
+
+
+
+
+
+
+

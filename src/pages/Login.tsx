@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Zap } from 'lucide-react';
 
 export default function Login() {
@@ -69,3 +69,13 @@ export default function Login() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

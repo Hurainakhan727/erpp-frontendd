@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
-import { getStatusColor, formatPKR } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { getStatusColor, formatPKR } from '../services/api';
 import { Pencil, Trash2, UserX, Plus, ChevronDown, FileText, Download, Printer, Clock, TrendingUp } from 'lucide-react';
-import Modal from '../components/Modal';
-import DecisionBanner from '../components/DecisionBanner';
-import { useToastContext } from '../contexts/ToastContext';
+import Modal from '../components/common/Modal';
+import DecisionBanner from '../components/common/DecisionBanner';
+import { useToastContext } from '../context/ToastContext';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const deptColors: Record<string, string> = { Engineering: '#1565c0', Marketing: '#e67e22', HR: '#1b7a4e', Sales: '#b71c1c', Finance: '#00695c' };
@@ -300,3 +300,14 @@ export default function EmployeeDetail() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

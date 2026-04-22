@@ -24,3 +24,14 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

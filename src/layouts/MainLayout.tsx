@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useData } from '../contexts/DataContext';
-import Sidebar from '../components/Sidebar';
-import Topbar from '../components/Topbar';
+import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
+import Sidebar from '../components/layout/Sidebar';
+import Topbar from '../components/layout/Topbar';
 import { AlertTriangle, X } from 'lucide-react';
 
 export default function MainLayout() {
@@ -45,3 +45,14 @@ export default function MainLayout() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

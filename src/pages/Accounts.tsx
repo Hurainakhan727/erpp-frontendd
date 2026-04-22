@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
-import { getStatusColor } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { getStatusColor } from '../services/api';
 import { Plus } from 'lucide-react';
-import Modal from '../components/Modal';
-import { useToastContext } from '../contexts/ToastContext';
+import Modal from '../components/common/Modal';
+import { useToastContext } from '../context/ToastContext';
 
 export default function Accounts() {
   const { hrAccounts, setHrAccounts, employees } = useData();
@@ -70,3 +70,14 @@ export default function Accounts() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

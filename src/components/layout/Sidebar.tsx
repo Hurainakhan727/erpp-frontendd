@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Users, CalendarCheck, CalendarDays, DollarSign, TrendingUp,
   Settings, Building2, Briefcase, Monitor, MapPin, UserCheck, ClipboardList,
@@ -119,3 +119,13 @@ export default function Sidebar() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
-import { getStatusColor, formatPKR, numberToWords } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { getStatusColor, formatPKR, numberToWords } from '../services/api';
 import { Plus, Eye, Pencil, Lock, Printer, Download } from 'lucide-react';
-import Modal from '../components/Modal';
-import DecisionBanner from '../components/DecisionBanner';
-import { useToastContext } from '../contexts/ToastContext';
+import Modal from '../components/common/Modal';
+import DecisionBanner from '../components/common/DecisionBanner';
+import { useToastContext } from '../context/ToastContext';
 
 export default function Payroll() {
   const { showToast } = useToastContext();
@@ -250,3 +250,14 @@ function PayslipView({ data, employees, onClose }: { data: any; employees: any[]
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

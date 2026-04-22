@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import SettingsPage from './SettingsPage';
-import { useData } from '../../contexts/DataContext';
-import { useToastContext } from '../../contexts/ToastContext';
+import { useData } from '../../context/DataContext';
+import { useToastContext } from '../../context/ToastContext';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import Modal from '../../components/Modal';
-import ConfirmDialog from '../../components/ConfirmDialog';
-import { formatPKR } from '../../data/dummyData';
+import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { formatPKR } from '../../services/api';
 
 export function DepartmentsPage() {
   const { departments, setDepartments } = useData();
@@ -215,3 +215,14 @@ export function GlobalDaysPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

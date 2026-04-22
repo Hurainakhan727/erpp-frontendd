@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useData } from '../context/DataContext';
 import { Calendar, TrendingUp, TrendingDown } from 'lucide-react';
-import { getStatusColor } from '../data/dummyData';
-import Modal from '../components/Modal';
-import { useToastContext } from '../contexts/ToastContext';
+import { getStatusColor } from '../services/api';
+import Modal from '../components/common/Modal';
+import { useToastContext } from '../context/ToastContext';
 
 export default function MyAttendance() {
   const { attendanceData } = useData();
@@ -86,3 +86,14 @@ export default function MyAttendance() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import EmployeeSidebar from '../components/EmployeeSidebar';
-import Topbar from '../components/Topbar';
+import { useAuth } from '../context/AuthContext';
+import EmployeeSidebar from '../components/layout/EmployeeSidebar';
+import Topbar from '../components/layout/Topbar';
 
 export default function EmployeeLayout() {
   const { user, activeRole } = useAuth();
@@ -21,3 +21,14 @@ export default function EmployeeLayout() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

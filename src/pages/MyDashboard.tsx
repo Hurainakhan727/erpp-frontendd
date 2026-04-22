@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useData } from "../contexts/DataContext";
-import { formatPKR } from "../data/dummyData";
+import { useData } from "../context/DataContext";
+import { formatPKR } from "../services/api";
 import {
   Calendar,
   CalendarDays,
@@ -18,8 +18,8 @@ import {
   ChevronRight,
   AlertTriangle,
 } from "lucide-react";
-import Modal from "../components/Modal";
-import { useToastContext } from "../contexts/ToastContext";
+import Modal from "../components/common/Modal";
+import { useToastContext } from "../context/ToastContext";
 
 export default function MyDashboard() {
   const [time, setTime] = useState(new Date());
@@ -957,3 +957,14 @@ export default function MyDashboard() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

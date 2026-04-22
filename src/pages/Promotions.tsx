@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
-import { formatPKR } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { formatPKR } from '../services/api';
 import { Plus, Calendar as CalendarIcon, Filter, MessageSquare } from 'lucide-react';
-import Modal from '../components/Modal';
-import { useToastContext } from '../contexts/ToastContext';
+import Modal from '../components/common/Modal';
+import { useToastContext } from '../context/ToastContext';
 
 export default function Promotions() {
   const { promotions, setPromotions, employees, setEmployees } = useData();
@@ -210,3 +210,13 @@ export default function Promotions() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

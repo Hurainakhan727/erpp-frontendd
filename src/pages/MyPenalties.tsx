@@ -7,7 +7,7 @@ import {
   Search,
   ChevronDown,
 } from "lucide-react";
-import { formatPKR } from "../data/dummyData";
+import { formatPKR } from "../services/api";
 
 const penaltiesData = [
   {
@@ -454,3 +454,14 @@ export default function MyPenalties() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

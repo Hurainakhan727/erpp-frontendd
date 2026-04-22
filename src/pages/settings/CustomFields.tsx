@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../context/DataContext';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import Modal from '../../components/Modal';
-import ConfirmDialog from '../../components/ConfirmDialog';
-import { useToastContext } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
+import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { useToastContext } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const SECTIONS = ['employee', 'contact', 'bank', 'job', 'salary', 'medical', 'attachments'];
@@ -107,3 +107,14 @@ export default function CustomFields() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

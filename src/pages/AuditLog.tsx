@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
-import { getStatusColor } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { getStatusColor } from '../services/api';
 import { Download } from 'lucide-react';
 
 const actionColors: Record<string, string> = { CREATE: 'pill-green', UPDATE: 'pill-blue', DELETE: 'pill-red', LOGIN: 'pill-steel', LOGOUT: 'pill-steel' };
@@ -93,3 +93,14 @@ export default function AuditLog() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

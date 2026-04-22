@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { Search, LogOut, ShieldCheck } from "lucide-react";
 
 const routeNames: Record<string, string> = {
@@ -111,3 +111,13 @@ export default function Topbar() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

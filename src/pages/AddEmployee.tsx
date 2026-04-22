@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useData } from '../context/DataContext';
 import { useNavigate } from 'react-router-dom';
-import { formatPKR } from '../data/dummyData';
+import { formatPKR } from '../services/api';
 import { Check, Lock, Upload, FileText, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import DecisionBanner from '../components/DecisionBanner';
-import { useToastContext } from '../contexts/ToastContext';
+import DecisionBanner from '../components/common/DecisionBanner';
+import { useToastContext } from '../context/ToastContext';
 
 const STEPS = ['Personal', 'Contact', 'Bank', 'Job Info', 'Salary', 'Medical', 'Attachments', 'Account'];
 
@@ -353,3 +353,13 @@ case 2: return (<div>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+

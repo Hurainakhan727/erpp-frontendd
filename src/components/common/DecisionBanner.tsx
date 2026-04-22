@@ -7,3 +7,14 @@ interface Props {
 export default function DecisionBanner({ children }: Props) {
   return <div className="decision-banner">⚠ {children}</div>;
 }
+
+
+
+
+
+
+
+
+
+
+

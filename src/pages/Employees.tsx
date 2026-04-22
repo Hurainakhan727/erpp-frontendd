@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
-import { getStatusColor } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { getStatusColor } from '../services/api';
 import { Plus, Search, Eye, Pencil, ChevronUp, ChevronDown, ArrowUpDown, UserX } from 'lucide-react';
-import ConfirmDialog from '../components/ConfirmDialog';
-import { useToastContext } from '../contexts/ToastContext';
+import ConfirmDialog from '../components/common/ConfirmDialog';
+import { useToastContext } from '../context/ToastContext';
 
 type SortKey = 'id' | 'name' | 'department' | 'designation' | 'employmentType' | 'jobStatus' | 'shift' | 'dateOfJoining';
 type SortDir = 'asc' | 'desc';
@@ -187,3 +187,14 @@ export default function Employees() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

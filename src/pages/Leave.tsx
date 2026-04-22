@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { useData } from '../contexts/DataContext';
-import { getStatusColor } from '../data/dummyData';
+import { useData } from '../context/DataContext';
+import { getStatusColor } from '../services/api';
 import { Plus, Check, X, Pencil, RotateCcw, CalendarDays, Users } from 'lucide-react';
-import Modal from '../components/Modal';
-import DecisionBanner from '../components/DecisionBanner';
-import { useToastContext } from '../contexts/ToastContext';
+import Modal from '../components/common/Modal';
+import DecisionBanner from '../components/common/DecisionBanner';
+import { useToastContext } from '../context/ToastContext';
 
 function calcDays(from: string, to: string): number {
   if (!from || !to) return 0;
@@ -246,3 +246,14 @@ export default function Leave() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

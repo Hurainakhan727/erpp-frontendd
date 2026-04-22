@@ -225,3 +225,14 @@ export function getStatusColor(status: string): string {
   if (['on leave', 'info'].includes(s)) return 'pill-blue';
   return 'pill-steel';
 }
+
+
+
+
+
+
+
+
+
+
+

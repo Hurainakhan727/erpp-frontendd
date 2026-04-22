@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
+import { useData } from '../context/DataContext';
 import { Save, Camera } from 'lucide-react';
-import { useToastContext } from '../contexts/ToastContext';
+import { useToastContext } from '../context/ToastContext';
 
 export default function MyProfile() {
   const { employees } = useData();
@@ -111,3 +111,14 @@ export default function MyProfile() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+

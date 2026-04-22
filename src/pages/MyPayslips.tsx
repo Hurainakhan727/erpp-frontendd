@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { formatPKR, numberToWords } from '../data/dummyData';
-import Modal from '../components/Modal';
+import { formatPKR, numberToWords } from '../services/api';
+import Modal from '../components/common/Modal';
 import { Printer, Download, Mail } from 'lucide-react';
 
 const payslips = [
@@ -89,3 +89,14 @@ export default function MyPayslips() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
