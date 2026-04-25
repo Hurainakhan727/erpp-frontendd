@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import {
-  Save, Undo2, Check, Download, Upload, Search
+  Save, Undo2, Check, Download, Upload, Search, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useToastContext } from '../context/ToastContext';
 
@@ -13,12 +13,11 @@ type AttRow = {
 
 const STATUSES = ['Present', 'Late', 'Absent', 'Half Day', 'On Leave', 'Holiday'];
 
-// Colors logic
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'Present': return { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' }; // Green
-    case 'Absent': return { bg: '#fef2f2', text: '#991b1b', border: '#fecaca' };  // Red
-    case 'Late': return { bg: '#fffbeb', text: '#92400e', border: '#fef3c7' };    // Yellow/Amber
+    case 'Present': return { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' };
+    case 'Absent': return { bg: '#fef2f2', text: '#991b1b', border: '#fecaca' };
+    case 'Late': return { bg: '#fffbeb', text: '#92400e', border: '#fef3c7' };
     case 'Half Day': return { bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' };
     case 'On Leave': return { bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' };
     default: return { bg: 'transparent', text: '#64748b', border: '#e2e8f0' };
@@ -40,6 +39,10 @@ export default function Attendance() {
   const [rows, setRows] = useState<AttRow[]>([]);
   const [undoStack, setUndoStack] = useState<AttRow[][]>([]);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const initRows = useCallback((): AttRow[] => {
     return employees.map((e: any) => {
       const s = shifts.find((sh: any) => sh.name === e.shift);
@@ -55,18 +58,24 @@ export default function Attendance() {
     const savedData = localStorage.getItem('ems_attendanceSheet_' + selectedDate);
     if (savedData) { setRows(JSON.parse(savedData)); } 
     else { setRows(initRows()); }
+    setCurrentPage(1); // Reset page on date change
   }, [selectedDate, initRows]);
 
-  const filteredRows = rows.filter(r => {
-    const emp = employees.find((e: any) => e.id === r.empId);
-    if (deptFilter && r.dept !== deptFilter) return false;
-    if (locFilter && emp?.workLocation !== locFilter) return false;
-    if (shiftFilter && r.shift !== shiftFilter) return false;
-    if (searchTerm && !r.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
-  });
+  const filteredRows = useMemo(() => {
+    return rows.filter(r => {
+      const emp = employees.find((e: any) => e.id === r.empId);
+      if (deptFilter && r.dept !== deptFilter) return false;
+      if (locFilter && emp?.workLocation !== locFilter) return false;
+      if (shiftFilter && r.shift !== shiftFilter) return false;
+      if (searchTerm && !r.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      return true;
+    });
+  }, [rows, deptFilter, locFilter, shiftFilter, searchTerm, employees]);
 
-  // Summary Logic
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const paginatedRows = filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const stats = {
     total: filteredRows.length,
     present: filteredRows.filter(r => r.status === 'Present').length,
@@ -75,14 +84,18 @@ export default function Attendance() {
     others: filteredRows.filter(r => r.status && !['Present', 'Absent', 'Late'].includes(r.status)).length
   };
 
-  const updateRow = (idx: number, field: keyof AttRow, value: any) => {
+  const updateRow = (idxInPaginated: number, field: keyof AttRow, value: any) => {
     setRows(prev => {
       const next = [...prev];
-      const realIdx = rows.indexOf(filteredRows[idx]);
-      next[realIdx] = { ...next[realIdx], [field]: value };
-      if (field === 'status' && value === 'Present') {
-        next[realIdx].checkIn = next[realIdx].expectedIn;
-        next[realIdx].checkOut = next[realIdx].expectedIn; 
+      const targetRow = paginatedRows[idxInPaginated];
+      const realIdx = prev.findIndex(r => r.empId === targetRow.empId);
+      
+      if (realIdx !== -1) {
+        next[realIdx] = { ...next[realIdx], [field]: value };
+        if (field === 'status' && value === 'Present') {
+          next[realIdx].checkIn = next[realIdx].expectedIn;
+          next[realIdx].checkOut = next[realIdx].expectedIn; 
+        }
       }
       return next;
     });
@@ -150,7 +163,6 @@ export default function Attendance() {
 
         {tab === 'daily' && (
           <>
-            {/* Daily Summary Row */}
             <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
               <div className="stat-badge" style={{ color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>Present: <b>{stats.present}</b></div>
               <div className="stat-badge" style={{ color: '#991b1b', background: '#fef2f2', border: '1px solid #fecaca' }}>Absent: <b>{stats.absent}</b></div>
@@ -191,7 +203,7 @@ export default function Attendance() {
               )}
             </thead>
             <tbody>
-              {filteredRows.map((r, i) => {
+              {paginatedRows.map((r, i) => {
                 const colors = getStatusColor(r.status);
                 return (
                   <tr key={r.empId} style={{ borderTop: '1px solid #f1f5f9', backgroundColor: tab === 'daily' ? colors.bg : 'transparent' }}>
@@ -231,6 +243,32 @@ export default function Attendance() {
               })}
             </tbody>
           </table>
+
+          {/* Pagination Footer */}
+          <div style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '12px', color: '#64748b' }}>
+              Showing {paginatedRows.length} of {filteredRows.length}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                className="btn-action" 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => p - 1)}
+                style={{ padding: '5px' }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span style={{ fontSize: '12px', fontWeight: '600' }}>Page {currentPage} of {totalPages || 1}</span>
+              <button 
+                className="btn-action" 
+                disabled={currentPage === totalPages || totalPages === 0} 
+                onClick={() => setCurrentPage(p => p + 1)}
+                style={{ padding: '5px' }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -239,9 +277,10 @@ export default function Attendance() {
         .tab-link.active { color: #2563eb; font-weight: 600; }
         .tab-link.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: #2563eb; }
         .btn-action { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; cursor: pointer; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-ghost { background: transparent; border: none; color: #64748b; padding: 6px 10px; cursor: pointer; display: flex; gap: 5px; align-items: center; font-size: 13px; }
         .table-input, .table-select { padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; outline: none; }
-        .stat-badge { padding: 6px 15px; borderRadius: 20px; font-size: 12px; display: flex; gap: 5px; border-radius: 20px; }
+        .stat-badge { padding: 6px 15px; border-radius: 20px; font-size: 12px; display: flex; gap: 5px; }
       `}</style>
     </div>
   );
