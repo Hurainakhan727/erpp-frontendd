@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import {
-  Save, Undo2, Check, Download, Upload, Search, ChevronLeft, ChevronRight
+  Undo2, Check, Download, Upload, Search, ChevronLeft, ChevronRight, Users
 } from 'lucide-react';
 import { useToastContext } from '../context/ToastContext';
 
@@ -24,30 +24,43 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const getInitials = (name: string) => {
+  return name.split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+};
+
+const shiftCycle = ['Morning', 'Evening', 'Night', 'Off'];
+const rosterShiftCycle = ['M', 'E', 'N', 'Off'];
+const statusChips = ['All Staff', 'Present', 'Late', 'Absent', 'On Leave'];
+
 export default function Attendance() {
   const { employees, departments, workLocations, shifts } = useData();
   const { showToast } = useToastContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [tab, setTab] = useState('daily');
   const [selectedDate, setSelectedDate] = useState('2026-03-03');
   const [deptFilter, setDeptFilter] = useState('');
   const [locFilter, setLocFilter] = useState('');
   const [shiftFilter, setShiftFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Staff');
   const [searchTerm, setSearchTerm] = useState('');
-
   const [rows, setRows] = useState<AttRow[]>([]);
   const [undoStack, setUndoStack] = useState<AttRow[][]>([]);
-
-  // Pagination State
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
+  const [noteValue, setNoteValue] = useState('');
+  const [roster, setRoster] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const getEmployeeAvatar = (id: string) => {
+    const emp = employees.find((e: any) => e.id === id);
+    return emp?.avatar || getInitials(emp?.name || '');
+  };
 
   const initRows = useCallback((): AttRow[] => {
     return employees.map((e: any) => {
       const s = shifts.find((sh: any) => sh.name === e.shift);
       return {
-        empId: e.id, name: e.name, dept: e.department, shift: e.shift,
+        empId: e.id, name: e.name, dept: e.department, shift: e.shift || 'Morning',
         expectedIn: s?.start || '09:00', checkIn: '-', checkOut: '-',
         status: '', lateBy: '', notes: '', acknowledged: false,
       };
@@ -56,10 +69,42 @@ export default function Attendance() {
 
   useEffect(() => {
     const savedData = localStorage.getItem('ems_attendanceSheet_' + selectedDate);
-    if (savedData) { setRows(JSON.parse(savedData)); } 
-    else { setRows(initRows()); }
-    setCurrentPage(1); // Reset page on date change
+    if (savedData) {
+      setRows(JSON.parse(savedData));
+    } else {
+      setRows(initRows());
+    }
+    setCurrentPage(1);
   }, [selectedDate, initRows]);
+
+  useEffect(() => {
+    const mapShift = (value: string) => {
+      const lower = value?.toLowerCase() || '';
+      if (lower.includes('morning')) return 'M';
+      if (lower.includes('evening')) return 'E';
+      if (lower.includes('night')) return 'N';
+      return 'M';
+    };
+
+    setRoster(employees.slice(0, 6).map((e: any) => ({
+      empId: e.id,
+      name: e.name,
+      initials: getInitials(e.name),
+      schedule: Array(6).fill(mapShift(e.shift))
+    })));
+  }, [employees]);
+
+  const updateRowById = (empId: string, field: keyof AttRow, value: any) => {
+    setRows(prev => prev.map(r => {
+      if (r.empId !== empId) return r;
+      const updated = { ...r, [field]: value };
+      if (field === 'status' && value === 'Present') {
+        updated.checkIn = updated.expectedIn;
+        updated.checkOut = updated.expectedIn;
+      }
+      return updated;
+    }));
+  };
 
   const filteredRows = useMemo(() => {
     return rows.filter(r => {
@@ -67,12 +112,12 @@ export default function Attendance() {
       if (deptFilter && r.dept !== deptFilter) return false;
       if (locFilter && emp?.workLocation !== locFilter) return false;
       if (shiftFilter && r.shift !== shiftFilter) return false;
-      if (searchTerm && !r.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (searchTerm && !`${r.name} ${r.empId} ${r.dept}`.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      if (statusFilter !== 'All Staff' && r.status !== statusFilter) return false;
       return true;
     });
-  }, [rows, deptFilter, locFilter, shiftFilter, searchTerm, employees]);
+  }, [rows, deptFilter, locFilter, shiftFilter, searchTerm, statusFilter, employees]);
 
-  // Pagination Logic
   const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
   const paginatedRows = filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -81,29 +126,47 @@ export default function Attendance() {
     present: filteredRows.filter(r => r.status === 'Present').length,
     absent: filteredRows.filter(r => r.status === 'Absent').length,
     late: filteredRows.filter(r => r.status === 'Late').length,
-    others: filteredRows.filter(r => r.status && !['Present', 'Absent', 'Late'].includes(r.status)).length
+    onLeave: filteredRows.filter(r => r.status === 'On Leave').length,
   };
 
-  const updateRow = (idxInPaginated: number, field: keyof AttRow, value: any) => {
-    setRows(prev => {
-      const next = [...prev];
-      const targetRow = paginatedRows[idxInPaginated];
-      const realIdx = prev.findIndex(r => r.empId === targetRow.empId);
-      
-      if (realIdx !== -1) {
-        next[realIdx] = { ...next[realIdx], [field]: value };
-        if (field === 'status' && value === 'Present') {
-          next[realIdx].checkIn = next[realIdx].expectedIn;
-          next[realIdx].checkOut = next[realIdx].expectedIn; 
-        }
-      }
-      return next;
-    });
+  const penaltyDays = Math.floor(stats.late / 3);
+  const penaltyLabel = stats.late > 0 ? `${stats.late} Lates = ${penaltyDays} Day Cut` : 'No penalties yet';
+  const bannerMessage = `Live: ${stats.absent} absent today · ${stats.late} late check-ins flagged · ${penaltyDays ? `${penaltyDays} penalty${penaltyDays > 1 ? 's' : ''} pending` : 'No penalty pending'}`;
+
+  const toggleShift = (empId: string) => {
+    const current = rows.find(r => r.empId === empId);
+    if (!current) return;
+    const index = shiftCycle.indexOf(current.shift || 'Morning');
+    const next = shiftCycle[(index + 1) % shiftCycle.length];
+    updateRowById(empId, 'shift', next);
+  };
+
+  const toggleRosterShift = (empId: string, dayIndex: number) => {
+    setRoster(prev => prev.map(item => {
+      if (item.empId !== empId) return item;
+      const current = item.schedule[dayIndex];
+      const next = rosterShiftCycle[(rosterShiftCycle.indexOf(current) + 1) % rosterShiftCycle.length] || 'M';
+      const schedule = [...item.schedule];
+      schedule[dayIndex] = next;
+      return { ...item, schedule };
+    }));
+  };
+
+  const toggleNoteRow = (empId: string, existingNote: string) => {
+    setOpenNoteId(prev => prev === empId ? null : empId);
+    setNoteValue(existingNote || '');
+  };
+
+  const handleSaveNote = () => {
+    if (!openNoteId) return;
+    updateRowById(openNoteId, 'notes', noteValue);
+    setOpenNoteId(null);
+    showToast('Note updated');
   };
 
   const markAllPresent = () => {
     setUndoStack(prev => [...prev, [...rows]]);
-    setRows(rows.map(r => {
+    setRows(prev => prev.map(r => {
       const isVisible = filteredRows.some(fr => fr.empId === r.empId);
       if (isVisible && (!r.status || r.status === 'Absent')) {
         return { ...r, status: 'Present', checkIn: r.expectedIn, checkOut: r.expectedIn };
@@ -113,175 +176,204 @@ export default function Attendance() {
   };
 
   return (
-    <div className="attendance-page" style={{ padding: '20px', background: '#f8fafc', minHeight: '100vh' }}>
+    <div className="attendance-page">
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".json" onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => setRows(JSON.parse(ev.target?.result as string));
-            reader.readAsText(file);
-          }
+        const file = e.target.files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => setRows(JSON.parse(ev.target?.result as string));
+          reader.readAsText(file);
+        }
       }} />
-      
-      <div className="pg-head" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Attendance</h1>
-        <div style={{ position: 'relative', width: '350px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: '#94a3b8' }} />
-          <input type="text" className="table-input" placeholder="Search..." style={{ paddingLeft: '40px', width: '100%' }} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+
+      <div className="attendance-header">
+        <div>
+          <div className="attendance-title">Daily Attendance Grid</div>
+          <div className="attendance-sub">{new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-             <button className="btn-ghost" onClick={() => showToast("Exporting...")}><Download size={14} /> Export</button>
-             <button className="btn-ghost" onClick={() => fileInputRef.current?.click()}><Upload size={14} /> Import</button>
+        <div className="attendance-header-actions">
+          <div className="search-box">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search name, dept, ID..."
+              value={searchTerm}
+              onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            />
+          </div>
+          <button className="btn btn-primary" onClick={() => { setRows(initRows()); showToast('Attendance reset'); }}>Reset</button>
         </div>
       </div>
 
-      <div className="tabs" style={{ display: 'flex', gap: '25px', borderBottom: '1px solid #e2e8f0' }}>
-        <button className={`tab-link ${tab === 'daily' ? 'active' : ''}`} onClick={() => setTab('daily')}>Daily Sheet</button>
-        <button className={`tab-link ${tab === 'monthly' ? 'active' : ''}`} onClick={() => setTab('monthly')}>Monthly Report</button>
+      <div className="attendance-summary-cards">
+        <div className="summary-card summary-card-blue">
+          <div className="summary-label">Present</div>
+          <div className="summary-value">{stats.present}</div>
+        </div>
+        <div className="summary-card summary-card-amber">
+          <div className="summary-label">Late</div>
+          <div className="summary-value">{stats.late}</div>
+        </div>
+        <div className="summary-card summary-card-red">
+          <div className="summary-label">Absent</div>
+          <div className="summary-value">{stats.absent}</div>
+        </div>
+        <div className="summary-card summary-card-teal">
+          <div className="summary-label">On Leave</div>
+          <div className="summary-value">{stats.onLeave}</div>
+        </div>
+        <div className="summary-card summary-card-steel">
+          <div className="summary-label">Auto Penalties</div>
+          <div className="summary-value">{penaltyDays}</div>
+          <div className="summary-note">{penaltyLabel}</div>
+        </div>
       </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <div className="filter-card" style={{ background: '#fff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <input type={tab === 'daily' ? "date" : "month"} className="table-input" value={selectedDate.slice(0, tab === 'daily' ? 10 : 7)} onChange={e => setSelectedDate(e.target.value)} />
-          <select className="table-select" value={deptFilter} onChange={e => setDeptFilter(e.target.value)}>
-            <option value="">All Departments</option>
-            {departments.map((d: any) => <option key={d} value={d}>{d}</option>)}
-          </select>
-          <select className="table-select" value={locFilter} onChange={e => setLocFilter(e.target.value)}>
-            <option value="">All Locations</option>
-            {workLocations.map((l: any) => <option key={l} value={l}>{l}</option>)}
-          </select>
-          <select className="table-select" value={shiftFilter} onChange={e => setShiftFilter(e.target.value)}>
-            <option value="">All Shifts</option>
-            {shifts.map((s: any) => <option key={s.name} value={s.name}>{s.name}</option>)}
-          </select>
-          <div style={{ flex: 1 }} />
-          {tab === 'daily' && (
-            <button className="btn-primary" onClick={() => { localStorage.setItem('ems_attendanceSheet_' + selectedDate, JSON.stringify(rows)); showToast("Saved!"); }} style={{ background: '#2563eb', color: '#fff', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>Save Changes</button>
-          )}
+      <div className="attendance-banner">
+        <span>{bannerMessage}</span>
+        <button className="btn btn-sm btn-ghost">Review</button>
+      </div>
+
+      <div className="filter-chips">
+        {statusChips.map(label => (
+          <button
+            key={label}
+            className={`filter-chip ${statusFilter === label ? 'active' : ''}`}
+            onClick={() => { setStatusFilter(label); setCurrentPage(1); }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="card attendance-table-card">
+        <div className="attendance-table-actions">
+          <div>
+            <select className="table-select" value={deptFilter} onChange={e => { setDeptFilter(e.target.value); setCurrentPage(1); }}>
+              <option value="">All Departments</option>
+              {departments.map((d: any) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <select className="table-select" value={locFilter} onChange={e => { setLocFilter(e.target.value); setCurrentPage(1); }}>
+              <option value="">All Locations</option>
+              {workLocations.map((l: any) => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <select className="table-select" value={shiftFilter} onChange={e => { setShiftFilter(e.target.value); setCurrentPage(1); }}>
+              <option value="">All Shifts</option>
+              {shifts.map((s: any) => <option key={s.name} value={s.name}>{s.name}</option>)}
+            </select>
+          </div>
+          <div className="attendance-actions-right">
+            <button className="btn btn-secondary" onClick={markAllPresent}><Check size={14} /> Mark All Present</button>
+            <button className="btn btn-secondary" disabled={undoStack.length === 0} onClick={() => { if (undoStack.length) setRows(undoStack.pop()!); }}><Undo2 size={14} /> Undo</button>
+          </div>
         </div>
 
-        {tab === 'daily' && (
-          <>
-            <div style={{ display: 'flex', gap: '15px', marginTop: '15px' }}>
-              <div className="stat-badge" style={{ color: '#166534', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>Present: <b>{stats.present}</b></div>
-              <div className="stat-badge" style={{ color: '#991b1b', background: '#fef2f2', border: '1px solid #fecaca' }}>Absent: <b>{stats.absent}</b></div>
-              <div className="stat-badge" style={{ color: '#92400e', background: '#fffbeb', border: '1px solid #fef3c7' }}>Late: <b>{stats.late}</b></div>
-              <div className="stat-badge" style={{ color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0' }}>Total: <b>{stats.total}</b></div>
-            </div>
-
-            <div className="actions-row" style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-              <button className="btn-action" onClick={markAllPresent}><Check size={14} /> Mark All Present</button>
-              <button className="btn-action" onClick={() => { if(undoStack.length) setRows(undoStack.pop()!) }} disabled={undoStack.length === 0}><Undo2 size={14} /> Undo</button>
-            </div>
-          </>
-        )}
-
-        <div className="card" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', marginTop: '15px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ background: '#f8fafc' }}>
-              {tab === 'daily' ? (
-                <tr>
-                  <th style={thStyle}>EMP ID</th>
-                  <th style={thStyle}>NAME</th>
-                  <th style={thStyle}>DEPARTMENT</th>
-                  <th style={thStyle}>SHIFT</th>
-                  <th style={thStyle}>CHECK IN</th>
-                  <th style={thStyle}>CHECK OUT</th>
-                  <th style={thStyle}>STATUS</th>
-                </tr>
-              ) : (
-                <tr>
-                  <th style={thStyle}>EMP ID</th>
-                  <th style={thStyle}>NAME</th>
-                  <th style={thStyle}>TOTAL DAYS</th>
-                  <th style={thStyle}>PRESENT</th>
-                  <th style={thStyle}>ABSENT</th>
-                  <th style={thStyle}>LATE</th>
-                  <th style={thStyle}>LEAVES</th>
-                </tr>
-              )}
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style={thStyle}>Employee</th>
+                <th style={thStyle}>Shift</th>
+                <th style={thStyle}>Check In</th>
+                <th style={thStyle}>Check Out</th>
+                <th style={thStyle}>Status</th>
+                <th style={thStyle}>Notes</th>
+                <th style={thStyle}>Lates</th>
+              </tr>
             </thead>
             <tbody>
-              {paginatedRows.map((r, i) => {
+              {paginatedRows.length === 0 ? (
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--t3)' }}>No attendance records available</td></tr>
+              ) : paginatedRows.map((r, i) => {
                 const colors = getStatusColor(r.status);
+                const lateCount = r.status === 'Late' ? 1 : 0;
                 return (
-                  <tr key={r.empId} style={{ borderTop: '1px solid #f1f5f9', backgroundColor: tab === 'daily' ? colors.bg : 'transparent' }}>
-                    {tab === 'daily' ? (
-                      <>
-                        <td style={{ padding: '12px', fontSize: '12px' }}>{r.empId}</td>
-                        <td style={{ padding: '12px', fontWeight: '600' }}>{r.name}</td>
-                        <td style={{ padding: '12px', fontSize: '12px' }}>{r.dept}</td>
-                        <td style={{ padding: '12px', fontSize: '12px' }}>{r.shift}</td>
-                        <td style={{ padding: '12px' }}><input type="time" className="table-input" value={r.checkIn === '-' ? '' : r.checkIn} onChange={e => updateRow(i, 'checkIn', e.target.value)} /></td>
-                        <td style={{ padding: '12px' }}><input type="time" className="table-input" value={r.checkOut === '-' ? '' : r.checkOut} onChange={e => updateRow(i, 'checkOut', e.target.value)} /></td>
-                        <td style={{ padding: '12px' }}>
-                          <select 
-                            className="table-select" 
-                            style={{ backgroundColor: colors.bg, color: colors.text, borderColor: colors.border, fontWeight: '600' }}
-                            value={r.status} 
-                            onChange={e => updateRow(i, 'status', e.target.value)}
-                          >
-                            <option value="" style={{color: '#64748b'}}>— Select —</option>
-                            {STATUSES.map(s => <option key={s} value={s} style={{backgroundColor: '#fff', color: '#000'}}>{s}</option>)}
-                          </select>
+                  <React.Fragment key={r.empId}>
+                    <tr>
+                      <td>
+                        <div className="table-avatar-cell">
+                          <div className="table-avatar table-avatar-small">{getEmployeeAvatar(r.empId)}</div>
+                          <div>
+                            <div style={{ fontWeight: 700 }}>{r.name}</div>
+                            <div className="mono" style={{ fontSize: 11, color: 'var(--t3)' }}>{r.empId} · {r.dept}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <button className="shift-chip" onClick={() => toggleShift(r.empId)}>{r.shift}</button>
+                      </td>
+                      <td><input type="time" className="table-input" value={r.checkIn === '-' ? '' : r.checkIn} onChange={e => updateRowById(r.empId, 'checkIn', e.target.value)} /></td>
+                      <td><input type="time" className="table-input" value={r.checkOut === '-' ? '' : r.checkOut} onChange={e => updateRowById(r.empId, 'checkOut', e.target.value)} /></td>
+                      <td>
+                        <span className={`pill ${r.status === 'Present' ? 'pill-green' : r.status === 'Late' ? 'pill-amber' : r.status === 'Absent' ? 'pill-red' : r.status === 'On Leave' ? 'pill-blue' : 'pill-steel'}`}>{r.status || 'Pending'}</span>
+                      </td>
+                      <td>
+                        <button className="note-button" onClick={() => toggleNoteRow(r.empId, r.notes)}>{r.notes ? r.notes : 'Add note'}</button>
+                      </td>
+                      <td className="mono">{lateCount}</td>
+                    </tr>
+                    {openNoteId === r.empId && (
+                      <tr className="note-row">
+                        <td colSpan={7}>
+                          <div className="note-panel">
+                            <textarea className="input" rows={3} value={noteValue} onChange={e => setNoteValue(e.target.value)} placeholder="Enter note or reason..." />
+                            <div className="note-actions">
+                              <button className="btn btn-secondary" onClick={() => setOpenNoteId(null)}>Cancel</button>
+                              <button className="btn btn-primary" onClick={handleSaveNote}>Save Note</button>
+                            </div>
+                          </div>
                         </td>
-                      </>
-                    ) : (
-                      <>
-                        <td style={{ padding: '12px', fontSize: '12px' }}>{r.empId}</td>
-                        <td style={{ padding: '12px', fontWeight: '600' }}>{r.name}</td>
-                        <td style={{ padding: '12px', fontSize: '12px' }}>30</td>
-                        <td style={{ padding: '12px', fontSize: '12px', color: '#10b981' }}>22</td>
-                        <td style={{ padding: '12px', fontSize: '12px', color: '#ef4444' }}>2</td>
-                        <td style={{ padding: '12px', fontSize: '12px', color: '#f59e0b' }}>4</td>
-                        <td style={{ padding: '12px', fontSize: '12px', color: '#6366f1' }}>2</td>
-                      </>
+                      </tr>
                     )}
-                  </tr>
+                  </React.Fragment>
                 );
               })}
             </tbody>
           </table>
+        </div>
 
-          {/* Pagination Footer */}
-          <div style={{ padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
-              Showing {paginatedRows.length} of {filteredRows.length}
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button 
-                className="btn-action" 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(p => p - 1)}
-                style={{ padding: '5px' }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span style={{ fontSize: '12px', fontWeight: '600' }}>Page {currentPage} of {totalPages || 1}</span>
-              <button 
-                className="btn-action" 
-                disabled={currentPage === totalPages || totalPages === 0} 
-                onClick={() => setCurrentPage(p => p + 1)}
-                style={{ padding: '5px' }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+        <div className="attendance-pagination">
+          <div style={{ color: 'var(--t3)' }}>Showing {paginatedRows.length} of {filteredRows.length}</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn btn-sm btn-ghost" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Page {currentPage} of {totalPages || 1}</span>
+            <button className="btn btn-sm btn-ghost" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
           </div>
         </div>
       </div>
 
-      <style>{`
-        .tab-link { padding: 10px 5px; border: none; background: none; font-size: 14px; color: #64748b; cursor: pointer; position: relative; }
-        .tab-link.active { color: #2563eb; font-weight: 600; }
-        .tab-link.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: #2563eb; }
-        .btn-action { display: flex; align-items: center; gap: 6px; padding: 7px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; cursor: pointer; }
-        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-ghost { background: transparent; border: none; color: #64748b; padding: 6px 10px; cursor: pointer; display: flex; gap: 5px; align-items: center; font-size: 13px; }
-        .table-input, .table-select { padding: 6px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; outline: none; }
-        .stat-badge { padding: 6px 15px; border-radius: 20px; font-size: 12px; display: flex; gap: 5px; }
-      `}</style>
+      <div className="card roster-card">
+        <div className="ch" style={{ marginBottom: 16 }}>
+          <div className="ct"><div className="ct-ico blue"><Users size={13} /></div>Duty Roster — 1st Week</div>
+          <div style={{ fontSize: 12, color: 'var(--t3)' }}>Date-mapped shifts · click to cycle M/E/N/Off</div>
+        </div>
+        <div className="roster-grid">
+          <div className="roster-header">Staff</div>
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="roster-header">{day}</div>
+          ))}
+          {roster.map(item => (
+            <React.Fragment key={item.empId}>
+              <div className="roster-person">
+                <div className="table-avatar table-avatar-small">{item.initials}</div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{item.name.split(' ')[0]}</div>
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--t3)' }}>{item.empId}</div>
+                </div>
+              </div>
+              {item.schedule.map((value: string, index: number) => (
+                <button
+                  key={`${item.empId}-${index}`}
+                  className={`roster-chip ${value === 'M' ? 'roster-chip-m' : value === 'E' ? 'roster-chip-e' : value === 'N' ? 'roster-chip-n' : 'roster-chip-off'}`}
+                  onClick={() => toggleRosterShift(item.empId, index)}
+                >
+                  {value}
+                </button>
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

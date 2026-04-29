@@ -13,10 +13,18 @@ function calcDays(from: string, to: string): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000) + 1;
 }
 
+const getInitials = (name: string) => {
+  return name.split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+};
+
 export default function Leave() {
   const { leaveRequests: data, setLeaveRequests: setData, employees, leaveTypes } = useData();
   const [tab, setTab] = useState('all');
   const { showToast } = useToastContext();
+  const getEmployeeAvatar = (id: string) => {
+    const emp = employees.find((e: any) => e.id === id);
+    return emp?.avatar || getInitials(emp?.name || '');
+  };
   const [newModal, setNewModal] = useState(false);
   const [editModal, setEditModal] = useState<any | null>(null);
   const [earlyModal, setEarlyModal] = useState<any | null>(null);
@@ -157,7 +165,15 @@ export default function Leave() {
             <tbody>
               {empBalances.map((e, i) => (
                 <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{e.name}<div className="mono" style={{ fontSize: 10, color: 'var(--t3)' }}>{e.id}</div></td>
+                  <td style={{ fontWeight: 600 }}>
+                    <div className="table-avatar-cell">
+                      <div className="table-avatar table-avatar-small">{getEmployeeAvatar(e.id)}</div>
+                      <div>
+                        <div>{e.name}</div>
+                        <div className="mono" style={{ fontSize: 10, color: 'var(--t3)' }}>{e.id}</div>
+                      </div>
+                    </div>
+                  </td>
                   <td>{e.dept}</td>
                   <td className="mono"><span style={{ color: (e.annual.total - e.annual.used) < 3 ? 'var(--red)' : 'var(--t1)' }}>{e.annual.used}/{e.annual.total}</span>{(e.annual.total - e.annual.used) < 3 && <span style={{ fontSize: 9, color: 'var(--red)', marginLeft: 4 }}>⚠ Low</span>}</td>
                   <td className="mono"><span style={{ color: (e.casual.total - e.casual.used) < 3 ? 'var(--red)' : 'var(--t1)' }}>{e.casual.used}/{e.casual.total}</span></td>
@@ -180,7 +196,15 @@ export default function Leave() {
               <tbody>
                 {filtered.map((l: any) => (
                   <tr key={l.id}>
-                    <td style={{ fontWeight: 600 }}>{l.empName}<div style={{ fontSize: 10, color: 'var(--t3)' }}>{l.empId}</div></td>
+                    <td style={{ fontWeight: 600 }}>
+                      <div className="table-avatar-cell">
+                        <div className="table-avatar table-avatar-small">{getEmployeeAvatar(l.empId)}</div>
+                        <div>
+                          <div>{l.empName}</div>
+                          <div className="mono" style={{ fontSize: 10, color: 'var(--t3)' }}>{l.empId}</div>
+                        </div>
+                      </div>
+                    </td>
                     <td>{l.leaveType}</td><td className="mono">{l.from}</td><td className="mono">{l.to}</td><td className="mono">{l.days}</td>
                     <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.reason}</td>
                     <td className="mono">{l.appliedOn}</td>

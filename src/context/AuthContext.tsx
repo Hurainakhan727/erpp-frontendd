@@ -9,6 +9,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   activeRole: 'super_admin' | 'hr' | 'employee';
+  loading: boolean;
   login: (username: string, password: string) => boolean;
   logout: () => void;
   switchRole: (role: 'super_admin' | 'hr' | 'employee') => void;
@@ -31,6 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('ems_user');
     return stored ? JSON.parse(stored).role : 'hr';
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   const login = (username: string, password: string): boolean => {
     const account = ACCOUNTS[username.toLowerCase()];
@@ -56,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, activeRole, login, logout, switchRole }}>
+    <AuthContext.Provider value={{ user, activeRole, loading, login, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

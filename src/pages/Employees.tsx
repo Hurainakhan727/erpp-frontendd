@@ -6,6 +6,10 @@ import { Plus, Search, Eye, Pencil, ChevronUp, ChevronDown, ArrowUpDown, UserX }
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { useToastContext } from '../context/ToastContext';
 
+const getInitials = (name: string) => {
+  return name.split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+};
+
 type SortKey = 'id' | 'name' | 'department' | 'designation' | 'employmentType' | 'jobStatus' | 'shift' | 'dateOfJoining';
 type SortDir = 'asc' | 'desc';
 
@@ -144,7 +148,12 @@ export default function Employees() {
                 <tr key={e.id} style={{ ...(selected.has(e.id) ? { background: 'var(--pl)' } : {}), ...(e.jobStatus === 'Terminated' ? { opacity: 0.5 } : {}) }}>
                   <td><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleSelect(e.id)} /></td>
                   <td className="mono">{e.id}</td>
-                  <td style={{ fontWeight: 600 }}>{e.name}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    <div className="table-avatar-cell">
+                      <div className="table-avatar table-avatar-small">{e.avatar || getInitials(e.name)}</div>
+                      <div>{e.name}</div>
+                    </div>
+                  </td>
                   <td>{e.department}</td>
                   <td>{e.designation}</td>
                   <td>{e.employmentType}</td>

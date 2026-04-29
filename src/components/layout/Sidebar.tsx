@@ -14,6 +14,15 @@ export default function Sidebar() {
   const location = useLocation();
   const isSettingsActive = location.pathname.startsWith('/settings');
 
+  const getUserInitials = (name = '') => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  };
+
+  const initials = getUserInitials(user?.name || user?.username || '');
+
   const mainLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/employees', icon: Users, label: 'Employees' },
@@ -107,12 +116,12 @@ export default function Sidebar() {
       <div className="sb-bottom">
         <div className="sb-user">
           <div className="sb-chip" onClick={logout}>
-            <div className="sb-av">{user?.username?.substring(0, 2).toUpperCase()}</div>
+            <div className="sb-av">{initials}</div>
             <div>
-              <div className="sb-un">{user?.username}</div>
+              <div className="sb-un">{user?.name || user?.username}</div>
               <div className="sb-ur">{activeRole}</div>
             </div>
-            <LogOut size={14} style={{ marginLeft: 'auto', color: 'rgba(255,255,255,.18)' }} />
+            <LogOut size={14} style={{ marginLeft: 'auto', color: 'rgba(15,23,42,.5)' }} />
           </div>
         </div>
       </div>
